@@ -1,7 +1,9 @@
 <template>
   <nav>
-    <router-link to="/">Pinia</router-link> |
-    <router-link to="/about">About</router-link>
+    <router-link :to="{ name: 'pinia' }">Pinia</router-link> |
+    <router-link to="/pinia/api">Pinia API 호출</router-link> |
+    <router-link to="/vuex">Vuex</router-link> |
+    <router-link to="/vuex/api">Vuex API 호출</router-link>
   </nav>
   <router-view/>
 </template>

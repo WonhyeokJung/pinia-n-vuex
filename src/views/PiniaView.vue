@@ -57,12 +57,12 @@ export default {
   name: 'HomeView',
   components: {
   },
-  setup () {
+  setup() {
     const text = ref('')
     const optionsStore = useOptionsStore()
     // 반응성 유지. actions의 함수엔 필요없음.
     const { list, getList } = storeToRefs(optionsStore)
-    function addAnimal () {
+    function addAnimal() {
       optionsStore.$patch({
         list: [...list.value, text.value]
       })
@@ -73,7 +73,7 @@ export default {
     const compText = ref('')
     // 구조 분해 할당시, storeToRefs로 반응성 유지
     const { foodList, getFoodList } = storeToRefs(compositionStore)
-    function addFood () {
+    function addFood() {
       compositionStore.$patch({
         // foodList.value 아님에 유의 외부에서 reactive 값 참조하므로, .value는 필요없다!
         foodList: [...compositionStore.getFoodList, compText.value]
