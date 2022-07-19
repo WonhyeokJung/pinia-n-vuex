@@ -1,7 +1,8 @@
 <template>
 <div>
   <h2>API 호출과 Pinia</h2>
-  <p>비동기 처리(async/await 등)이 필수이며, Composition API 형태로 구현하면 Reactivity(반응성) 정상적으로 작동하지 않는 경우가 있어 <br /> 되도록이면 Pinia를 Options API 형태로 구현한다.</p>
+  <p>비동기 처리(async/await 등)이 필수이며, Composition API로 작성하는 경우 비동기 처리를 하지 않으면 Data가 null로 들어온다.(actions에서 state에 데이터를 넣기 전에 불러옴.)</p>
+  <p>가장 주의할 점은 actions는 storeToRefs로 불러오지 않고, storeName.actionsName 혹은 const { actionsName } = storeName으로 불러오는 것이다.</p>
   <p>페이지 * 장수 &lt;= 993</p>
   <div>
     <label for="page">
@@ -18,7 +19,7 @@
   <div>getters 이용한 이미지 가져오기</div>
   <div v-if="getImages" class="image-container">
     <div v-for="(image, i) in getImages" :key="i">
-      <img :src="image.download_url" alt="IMAGE">
+      <img :src="image.download_url" alt="IMAGE" @load="loaded">
     </div>
   </div>
   <hr />
@@ -39,10 +40,14 @@ export default {
   name: 'ApiCallPiniaView',
   components: {},
   setup() {
+    function loaded() {
+      console.log('@load loaded')
+    }
     const page = ref(null);
     const limit = ref(null);
     const apiCallStore = useApiCallStore();
     const { images, getImages } = storeToRefs(apiCallStore);
+    // actions는 storeToRefs 사용해서 불러오면 함수 인식이 불가능하므로, 따로 부른다.
     async function fetchImages(page, limit) {
       if (page === null || limit === null) {
         return alert('페이지 수와 이미지 수를 입력해주세요.');
@@ -55,7 +60,8 @@ export default {
       images,
       getImages,
       fetchImages,
-      init: fetchImages(273, 1)
+      init: fetchImages(273, 1),
+      loaded
     }
   },
 }
