@@ -32,7 +32,7 @@
 </div>
 </template>
 <script>
-import { ref } from 'vue-demi';
+import { ref, computed } from 'vue-demi';
 // import axios from 'axios';
 import { useApiCallStore } from '@/stores/pinia'
 import { storeToRefs } from 'pinia';
@@ -46,7 +46,8 @@ export default {
     const page = ref(null);
     const limit = ref(null);
     const apiCallStore = useApiCallStore();
-    const { images, getImages } = storeToRefs(apiCallStore);
+    // 반응성 유지
+    const { images } = storeToRefs(apiCallStore);
     // actions는 storeToRefs 사용해서 불러오면 함수 인식이 불가능하므로, 따로 부른다.
     async function fetchImages(page, limit) {
       if (page === null || limit === null) {
@@ -58,7 +59,8 @@ export default {
       page,
       limit,
       images,
-      getImages,
+      // 이렇게 해도 유지된다.
+      getImages: computed(() => apiCallStore.getImages),
       fetchImages,
       init: fetchImages(273, 1),
       loaded
