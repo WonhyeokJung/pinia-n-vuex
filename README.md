@@ -74,3 +74,63 @@ const { increment } = store // actions can be destructured directly
 ------
 
 Also, according to [Pinia docs](https://pinia.vuejs.org/core-concepts/), the first argument is the `unique ID`, so you do not need to specify the `id` again inside the options object. Or you can just ignore the first argument and just specify the `id` as an option. Either way is fine.
+
+---
+
+#### Use Composition API
+
+반응성을 Composition API에서 먼저 살린다. 
+
+```js
+export const useCompositionStore = defineStore('composition', () => {
+  const foodList = ref(['Hamburger', 'Ramyeon'])
+  const foodList2 = reactive({ burger: 'hamburger', noodle: 'ramyeon' })
+  const getFoodList = computed((state, getters, rootState, rootGetters) => foodList.value)
+  return {
+    foodList,
+    foodList2: toRefs(foodList2),
+    getFoodList
+  }
+})
+```
+
+불러오기는 아래와 같다.
+
+```vue
+<!-- @/views/PiniaView.vue -->
+<template>
+	<!-- 1. 직접부르기 / ref, reactive 상관없이 반응성을 유지한다. -->
+	{{ compositionStore.foodList2 }}
+	{{ compositionStore.foodList }}
+	<!-- 2-2. 구조분해할당 -->
+	{{ foodList }}
+	<!-- 3-2. reactive Object -->
+	{{ foodList2 }}
+</template>
+<script>
+	export default {
+    setup() {
+      const compositionStore = useCompositionStore();
+      // 2-1. 구조 분해 할당. state, getters는 storeToRefs가 필요하다.
+      const { foodList, getFoodList } = storeToRefs(composotionStore);
+      // 3. reactive({}) 객체의 경우 함수처럼 그냥 내보내도 된다.
+      const { foodList2 } = compositionStore;
+      // cf. $patch. store 내의 state를 갱신해서 반환한다.
+      const compText = ref('');
+      function addFood() {
+        compositionStore.$patch({
+          foodList: [...compositionStore.getFoodList, compText.value]
+        });
+      }
+      return {
+        compositionStore,
+        foodList,
+        getFoodList,
+        foodList2,
+        addFood
+      }
+    }
+  }
+</script>
+```
+
