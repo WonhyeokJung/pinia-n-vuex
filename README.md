@@ -11,6 +11,7 @@ npm install --legacy-peer-deps
 ## Vuex
 
 - Mutations(SNAKE_CASE) : mutations에선 비동기작업은 금지되어 있고, 보통 state에 값을 할당하는 목적으로만 쓴다. Parameters로 state, payload를 가지며 state는 state로의 접근, Actions등에서 보내준 인수가 할당되어 보통 state에 할당할 값을 들고 있다.
+  굳이 Mutations에서 actions에서 할 수 있는 state에 값 할당을 하는 이유 중 하나는 **개발자 도구(F12)의 Vue 확장프로그램**에서 **Mutations**만 추적이 되기 때문이다.
 - Actions(camelCase): 보통 get~ 등으로 시작하며, 매개변수로 (context, payload)를 가지고 있다. 비동기 호출 혹은 일반적인 함수 기능들은 전부 이곳에 정의해야 한다. payload의 기능은 Mutations와 같으며 context는 { commit, dispatch, state, rootState, getters, rootGetters } 등을 담고 있다.
   - Commit : Mutations 내의 함수를 호출하는 함수
   - Dispatch: Actions 내의 함수를 호출하는 함수
@@ -106,6 +107,8 @@ export const useCompositionStore = defineStore('composition', () => {
 	{{ foodList }}
 	<!-- 3-2. reactive Object -->
 	{{ foodList2 }}
+	<!-- 3-3. storeToRefs의 미사용 -->
+	{{ foodList3 }}
 </template>
 <script>
 	export default {
@@ -127,10 +130,113 @@ export const useCompositionStore = defineStore('composition', () => {
         foodList,
         getFoodList,
         foodList2,
-        addFood
+        // 4. computed를 이용해 storeToRefs의 사용없이 반응성을 유지할 수 있다.
+        // 반드시 composition API에서 반응성을 살려두었어야만 작동함에 유의한다.
+        foodList3: computed(() => compositionStore.getFoodList)
       }
     }
   }
 </script>
+```
+
+
+
+##### Composition API 방식 내 reactive({}) 객체의 반응성 유지
+
+아래와 같이 Composition API 방식 Store를 선언했다고 가정하자.
+
+```javascript
+export const usePostsStore = defineStore('posts', () => {
+  const state = reactive({
+    mainPosts: [],
+  });
+
+  function addMainPost(payload) {
+    console.log('add function activated');
+    // 서버에 게시글 요청
+    // ...
+    state.mainPosts.unshift(payload);
+  }
+
+  function removeMainPost(payload) {
+    const index = state.mainPosts.findIndex(v => v.id === payload.id);
+    state.mainPosts.splice(index, 1);
+  }
+
+  return {
+    state: toRefs(state),
+    addMainPost,
+    removeMainPost
+  }
+});
+```
+
+우리는 Vue 페이지에서 새로운 메인 포스트가 등록될 때마다 `state.mainPosts`를 반응형으로 출력하고 싶다. 이 때 방법은 두가지가 있다.
+
+store import문과 PostCard 컴포넌트 import 문 등은 생략한다.
+
+```vue
+<!-- 방법 1 : 객체 내 원하는 key 직접 불러오기 -->
+<template>
+	<PostCard v-for="p in mainPosts" :key="p.id" :post="p" />
+</template>
+<script setup>
+  // computed로 반응성 유지
+	const mainPosts = computed(() => postsStore.state.mainPosts);
+</script>
+```
+
+```vue
+<template>
+	<PostCard v-for="p in state.mainPosts" :key="p.id" :post="p" />
+</template>
+<script setup>
+  const postsStore = usePostsStore();
+  // reactive({}) 객체는 storeToRefs로 반응성을 살리지 않아도 동작한다.
+	const { state } = postsStore;
+</script>
+```
+
+하위 컴포넌트 PostCard와는 props로 연결되어 있다.
+
+```vue
+<template>
+  <div>
+    <div class="container">
+      <h3>{{ post.id }}</h3>
+      <div>{{ post }}</div>
+      <div><button @click="onRemovePost">삭제</button></div>
+    </div>
+  </div>
+</template>
+<script>
+  // Nuxt ~ === Vue @
+import { usePostsStore } from '~/stores/posts'
+export default {
+  name: 'ThePostCardComponent',
+  components: {},
+  props: {
+    post: {
+      type: Object,
+      default: undefined
+    }
+  },
+  setup(props, { attrs, slots, emit, expose }) {
+    const postsStore = usePostsStore();
+    const onRemovePost = function () {
+      postsStore.removeMainPost({
+        id: props.post.id,
+      });
+    }
+
+    return {
+      onRemovePost
+    }
+  },
+}
+</script>
+<style scoped>
+
+</style>
 ```
 
